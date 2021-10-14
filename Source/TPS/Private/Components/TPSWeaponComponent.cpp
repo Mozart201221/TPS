@@ -83,6 +83,7 @@ void UTPSWeaponComponent::EquipWeapon(int32 WeaponIndex)
 
 	if (CurrentWeapon)
 	{
+		CurrentWeapon->Zoom(false);
 		CurrentWeapon->StopFire();
 		AttachWeaponToSocket(CurrentWeapon, Character->GetMesh(), WeaponArmorySocketName);
 	}
@@ -260,4 +261,12 @@ void UTPSWeaponComponent::ChangeClip()
 bool UTPSWeaponComponent::CanEquip() const
 {
 	return !EquipAnimInProgress && !ReloadAnimInProgress;
+}
+
+void UTPSWeaponComponent::Zoom(bool Enabled)
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Zoom(Enabled);
+	}
 }

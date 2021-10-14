@@ -5,11 +5,12 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/DecalComponent.h"
+#include "Sound/SoundCue.h"
 
 // Sets default values for this component's properties
 UTPSWeaponFXComponent::UTPSWeaponFXComponent()
 {
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 
 }
 
@@ -37,8 +38,12 @@ void UTPSWeaponFXComponent::PlayImpactFX(const FHitResult& Hit)
 		ImpactData.DecalData.Size,
 		Hit.ImpactPoint,
 		Hit.ImpactNormal.Rotation());
+
 	if (DecalComponent)
 	{
 		DecalComponent->SetFadeOut(ImpactData.DecalData.LifeTime, ImpactData.DecalData.FadeOutTime);
 	}
+
+	// sound
+	UGameplayStatics::PlaySoundAtLocation(GetWorld(), ImpactData.Sound, Hit.ImpactPoint);
 }

@@ -3,13 +3,64 @@
 
 #include "UI/TPSGameHUD.h"
 #include "Engine/Canvas.h"
-#include "Blueprint/UserWidget.h"
+#include "UI/TPSBaseWidget.h"
+#include "TPSGameMode.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogTPSGameHUD, All, All);
 
 void ATPSGameHUD::DrawHUD()
 {
 	Super::DrawHUD();
 
 	//DrawCrossHair();
+}
+
+void ATPSGameHUD::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	GameWidgets.Add(ETPSMatchState::InProgress, CreateWidget<UTPSBaseWidget>(GetWorld(), PlayerHUDWidgetClass));
+	GameWidgets.Add(ETPSMatchState::Pause, CreateWidget<UTPSBaseWidget>(GetWorld(), PauseWidgetClass));
+	GameWidgets.Add(ETPSMatchState::GameOver, CreateWidget<UTPSBaseWidget>(GetWorld(), GameOverWidgetClass));
+
+	for (auto GameWidgetPair : GameWidgets)
+	{
+		const auto GameWidget = GameWidgetPair.Value;
+		if (!GameWidget) continue;
+
+		GameWidget->AddToViewport();
+		GameWidget->SetVisibility(ESlateVisibility::Hidden);
+	}
+
+	if (GetWorld())
+	{
+		const auto GameMode = Cast<ATPSGameMode>(GetWorld()->GetAuthGameMode());
+		if (GameMode)
+		{
+			GameMode->OnMatchStateChanged.AddUObject(this, &ATPSGameHUD::OnMatchStateChanged);
+		}
+	}
+}
+
+void ATPSGameHUD::OnMatchStateChanged(ETPSMatchState State)
+{
+	if (CurrentWidget)
+	{
+		CurrentWidget->SetVisibility(ESlateVisibility::Hidden);
+	}
+
+	if (GameWidgets.Contains(State))
+	{
+		CurrentWidget = GameWidgets[State];
+	}
+
+	if (CurrentWidget)
+	{
+		CurrentWidget->SetVisibility(ESlateVisibility::Visible);
+		CurrentWidget->Show();
+	}
+	
+	UE_LOG(LogTPSGameHUD, Display, TEXT("Match state changed: %s"), *UEnum::GetValueAsString(State));
 }
 
 void ATPSGameHUD::DrawCrossHair()
@@ -22,14 +73,4 @@ void ATPSGameHUD::DrawCrossHair()
 
 	DrawLine(Center.Min - HalfLineSize, Center.Max, Center.Min + HalfLineSize, Center.Max, LineColor, LineThickness);
 	DrawLine(Center.Min, Center.Max - HalfLineSize, Center.Min, Center.Max + HalfLineSize, LineColor, LineThickness);
-}
-
-void ATPSGameHUD::BeginPlay()
-{
-	Super::BeginPlay();
-	auto PlayerHUDWidget = CreateWidget<UUserWidget>(GetWorld(), PlayerHUDWidgetClass);
-	if (PlayerHUDWidget)
-	{
-		PlayerHUDWidget->AddToViewport();
-	}
 }

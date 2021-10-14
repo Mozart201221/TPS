@@ -7,6 +7,7 @@
 #include "TPSPickup.generated.h"
 
 class USphereComponent;
+class USoundCue;
 
 UCLASS()
 class TPS_API ATPSPickup : public AActor
@@ -20,11 +21,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Pickup")
 	USphereComponent* CollisionComponent;
 
-	virtual void BeginPlay() override;
-	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Pickup")
 	float RespawnTime = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundCue* PickupTakenSound;
+
+	virtual void BeginPlay() override;
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
 public:	
 	virtual void Tick(float DeltaTime) override;

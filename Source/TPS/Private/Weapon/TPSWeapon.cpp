@@ -33,21 +33,11 @@ void ATPSWeapon::BeginPlay()
 	CurrentAmmo = DefaultAmmo;
 }
 
-void ATPSWeapon::StartFire()
-{
-	
-}
+void ATPSWeapon::StartFire() {}
 
-void ATPSWeapon::StopFire()
-{
-	
-}
+void ATPSWeapon::StopFire() {}
 
-
-void ATPSWeapon::MakeShot()
-{
-	
-}
+void ATPSWeapon::MakeShot() {}
 
 bool ATPSWeapon::GetPlayerViewPoint(FVector& ViewLocation, FRotator& ViewRotation) const
 {
@@ -195,5 +185,10 @@ bool ATPSWeapon::TryToAddAmmo(int32 ClipsAmount)
 UNiagaraComponent* ATPSWeapon::SpawnMuzzleFX()
 {
 	return UNiagaraFunctionLibrary::SpawnSystemAttached(
-		MuzzleFX, WeaponMesh, MuzzleSocketName, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::SnapToTarget, true);
+		MuzzleFX,
+		WeaponMesh,
+		MuzzleSocketName,
+		FVector::ZeroVector,
+		FRotator::ZeroRotator,
+		EAttachLocation::SnapToTarget, true);
 }

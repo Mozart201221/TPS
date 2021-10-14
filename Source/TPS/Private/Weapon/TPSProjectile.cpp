@@ -36,7 +36,7 @@ void ATPSProjectile::BeginPlay()
 
 	MovementComponent->Velocity = ShotDirection * MovementComponent->InitialSpeed;
 	CollisionComponent->OnComponentHit.AddDynamic(this, &ATPSProjectile::OnProjectileHit);
-	CollisionComponent->IgnoreActorWhenMoving(GetOwner(), true);
+	CollisionComponent->IgnoreActorWhenMoving(GetOwner(), true); 
 	SetLifeSpan(LifeSeconds);
 }
 
@@ -58,8 +58,9 @@ void ATPSProjectile::OnProjectileHit(
 		GetController(),
 		DoFullDamage);
 
-	DrawDebugSphere(GetWorld(), GetActorLocation(), DamageRadius, 24, FColor::Red, false, 5.0f);
+	//DrawDebugSphere(GetWorld(), GetActorLocation(), DamageRadius, 24, FColor::Red, false, 5.0f); 
 	WeaponFXComponent->PlayImpactFX(Hit);
+
 	Destroy();
 }
 

@@ -6,9 +6,6 @@
 #include "BehaviorTree/BTTaskNode.h"
 #include "TPSNextLocationTask.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class TPS_API UTPSNextLocationTask : public UBTTaskNode
 {

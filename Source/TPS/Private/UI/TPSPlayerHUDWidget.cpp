@@ -5,16 +5,28 @@
 #include "Components/TPSHealthComponent.h"
 #include "Components/TPSWeaponComponent.h"
 #include "TPSUtils.h"
+#include "Components/ProgressBar.h"
+#include "Player/TPSPlayerState.h"
 
-bool UTPSPlayerHUDWidget::Initialize()
+void  UTPSPlayerHUDWidget::NativeOnInitialized()
 {
-	const auto HealthComponent = TPSUtils::GetTPSPlayerComponent<UTPSHealthComponent>(GetOwningPlayerPawn());
+	Super::NativeOnInitialized();
+
+	if (GetOwningPlayer())
+	{
+		GetOwningPlayer()->GetOnNewPawnNotifier().AddUObject(this, &UTPSPlayerHUDWidget::OnNewPawn);
+		OnNewPawn(GetOwningPlayerPawn());
+	}
+}
+
+void UTPSPlayerHUDWidget::OnNewPawn(APawn* NewPawn)
+{
+	const auto HealthComponent = TPSUtils::GetTPSPlayerComponent<UTPSHealthComponent>(NewPawn);
 	if (HealthComponent)
 	{
 		HealthComponent->OnHealthChanged.AddUObject(this, &UTPSPlayerHUDWidget::OnHealthChanged);
 	}
-
-	return Super::Initialize();
+	UpdateHealthBar();
 }
 
 
@@ -23,9 +35,15 @@ void UTPSPlayerHUDWidget::OnHealthChanged(float Health, float HealthDelta)
 	if (HealthDelta < 0.0f)
 	{
 		OnTakeDamage();
-	}
-}
 
+		if (!IsAnimationPlaying(DamageAnimation))
+		{
+			PlayAnimation(DamageAnimation);
+		}
+	}
+
+	UpdateHealthBar();
+}
 
 float UTPSPlayerHUDWidget::GetHealthPercent() const
 {
@@ -63,3 +81,35 @@ bool UTPSPlayerHUDWidget::IsPlayerSpectating() const
 	return Controller && Controller->GetStateName() == NAME_Spectating;
 }
 
+void UTPSPlayerHUDWidget::UpdateHealthBar()
+{
+	if (HealthProgressBar)
+	{
+		HealthProgressBar->SetFillColorAndOpacity(GetHealthPercent() > PercentColorThreshold ? GoodColor : BadColor);
+	}
+}
+
+FString UTPSPlayerHUDWidget::FormatBullets(int32 BulletsNum) const
+{
+	const int32 MaxLen = 3;
+	const TCHAR PrefixSymbol = '0';
+
+	auto BulletStr = FString::FromInt(BulletsNum);
+	const auto SybolsNumToAdd = MaxLen - BulletStr.Len();
+
+	if (SybolsNumToAdd > 0)
+	{
+		BulletStr = FString::ChrN(SybolsNumToAdd, PrefixSymbol).Append(BulletStr);
+	}
+
+	return BulletStr;
+}
+
+int32 UTPSPlayerHUDWidget::GetKillsNum() const
+{
+	const auto Controller = GetOwningPlayer();
+	if (!Controller) return 0;
+
+	const auto PlayerState = Cast<ATPSPlayerState>(Controller->PlayerState);
+	return PlayerState ? PlayerState->GetKillsNum() : 0;
+}

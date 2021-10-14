@@ -7,6 +7,7 @@
 #include "TPSCoreTypes.h"
 #include "TPSHealthComponent.generated.h"
 
+class UPhysicalMaterial;
 class UCameraShakeBase;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -53,6 +54,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VFX")
 	TSubclassOf<UCameraShakeBase> CameraShake;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Health")
+		TMap<UPhysicalMaterial*, float> DamageModifiers;
+
 private:
 	float CurHealth = 0.0f;
 	FTimerHandle HealTimerHandle;
@@ -61,10 +65,22 @@ private:
 	void OnTakeAnyDamageHandle(
 		AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
+	UFUNCTION()
+		void OnTakePointDamage(AActor* DamagedActor, float Damage, class AController* InstigatedBy, FVector HitLocation, 
+			class UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const class UDamageType* DamageType, AActor* DamageCauser);
+	
+	UFUNCTION()
+		void OnTakeRadialDamage(
+			AActor* DamagedActor, float Damage, const class UDamageType* DamageType, 
+			FVector Origin, FHitResult HitInfo, class AController* InstigatedBy, AActor* DamageCauser );
+
 	void HealUpdate();
 	void SetHealth(float NewHealth);
-
 	void PlayCameraShake();
 
 	void Killed(AController* KillerController);
+	void ApplyDamage(float Damage, AController* InstigatedBy);
+	float GetPointDamageModifier(AActor* DamageActor, const FName& BoneName);
+
+	void ReportDamageEvent(float Damage, AController* InstigatedBy);
 };

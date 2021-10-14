@@ -7,35 +7,40 @@
 #include "NiagaraComponent.h"
 #include "Weapon/Components/TPSWeaponFXComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
+#include "Components/AudioComponent.h"
 
 ATPSRifleWeapon::ATPSRifleWeapon()
 {
 	WeaponFXComponent = CreateDefaultSubobject<UTPSWeaponFXComponent>("WeaponFXComponent");
 }
 
+
+void ATPSRifleWeapon::BeginPlay()
+{
+	Super::BeginPlay();
+
+	check(WeaponFXComponent);
+}
+
 void ATPSRifleWeapon::StartFire()
 {
-	InitMuzzleFX();
-	GetWorldTimerManager().SetTimer(ShotTimerHandle, this, &ATPSRifleWeapon::MakeShot, TimeBetweenShots, true);
+	InitFX();
+	GetWorldTimerManager().SetTimer(ShootTimerHandle, this, &ATPSRifleWeapon::MakeShot, TimeBetweenShots, true);
 	MakeShot();
 }
 
 void ATPSRifleWeapon::StopFire()
 {
-	GetWorldTimerManager().ClearTimer(ShotTimerHandle);
-	SetMuzzleFXVisibility(false);
-}
-
-
-void ATPSRifleWeapon::BeginPlay()
-{
-	Super::BeginPlay();
-	
-	check(WeaponFXComponent);
+	GetWorldTimerManager().ClearTimer(ShootTimerHandle);
+	SetFXActive(false);
 }
 
 void ATPSRifleWeapon::MakeShot()
 {
+	// UE_LOG(LogTemp, Display, TEXT("Make shot")); 
+
 	if (!GetWorld() || IsAmmoEmpty())
 	{
 		StopFire();
@@ -81,24 +86,34 @@ void ATPSRifleWeapon::MakeDamage(const FHitResult& HitResult)
 	const auto DamageActor = HitResult.GetActor();
 	if (!DamageActor) return;
 
-	DamageActor->TakeDamage(DamageAmount, FDamageEvent(), GetController(), this);
+	FPointDamageEvent PointDamageEvent;
+	PointDamageEvent.HitInfo = HitResult;
+	DamageActor->TakeDamage(DamageAmount, PointDamageEvent, GetController(), this);
 }
 
-void ATPSRifleWeapon::InitMuzzleFX()
+void ATPSRifleWeapon::InitFX()
 {
 	if (!MuzzleFXComponent)
 	{
 		MuzzleFXComponent = SpawnMuzzleFX();
 	}
-	SetMuzzleFXVisibility(true);
+	
+	FireAudioComponent = UGameplayStatics::SpawnSoundAttached(FireSound, WeaponMesh, MuzzleSocketName);
+	
+	SetFXActive(true);
 }
 
-void ATPSRifleWeapon::SetMuzzleFXVisibility(bool Visible)
+void ATPSRifleWeapon::SetFXActive(bool IsActive)
 {
 	if (MuzzleFXComponent)
 	{
-		MuzzleFXComponent->SetPaused(!Visible);
-		MuzzleFXComponent->SetVisibility(Visible, true);
+		MuzzleFXComponent->SetPaused(!IsActive);
+		MuzzleFXComponent->SetVisibility(IsActive, true);
+	}
+
+	if (FireAudioComponent)
+	{
+		IsActive ? FireAudioComponent->Play() : FireAudioComponent->Stop();
 	}
 }
 
@@ -115,4 +130,16 @@ AController* ATPSRifleWeapon::GetController() const
 {
 	const auto Pawn = Cast<APawn>(GetOwner());
 	return Pawn ? Pawn->GetController() : NULL;
+}
+
+void ATPSRifleWeapon::Zoom(bool Enabled)
+{
+	const auto Controller = Cast<APlayerController>(GetController());
+	if (!Controller || !Controller->PlayerCameraManager) return;
+
+	if (Enabled)
+	{
+		DefaultCameraFOV = Controller->PlayerCameraManager->GetFOVAngle();
+	}
+	Controller->PlayerCameraManager->SetFOV(Enabled ? FOVZoomAngle : DefaultCameraFOV);
 }

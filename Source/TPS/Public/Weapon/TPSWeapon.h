@@ -11,6 +11,7 @@
 class USkeletalMeshComponent;
 class UNiagaraSystem;
 class UNiagaraComponent;
+class USoundCue;
 
 UCLASS()
 class TPS_API ATPSWeapon : public AActor
@@ -18,7 +19,6 @@ class TPS_API ATPSWeapon : public AActor
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
 	ATPSWeapon();
 
 	FOnClipEmptySignature OnClipEmpty;
@@ -35,6 +35,8 @@ public:
 	bool TryToAddAmmo(int32 ClipsAmount);
 	bool IsAmmoEmpty() const;
 	bool IsAmmoFull() const;
+
+	virtual void Zoom(bool Enabled) {}
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
@@ -54,6 +56,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
 	UNiagaraSystem* MuzzleFX;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Sound")
+	USoundCue* FireSound;
 
 	virtual void BeginPlay() override;
 

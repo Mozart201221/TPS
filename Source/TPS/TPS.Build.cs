@@ -20,7 +20,7 @@ public class TPS : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
-		PublicIncludePaths.AddRange(new string[] { "TPS/Public/Player", "TPS/Public/Components", "TPS/Public/EQS"});
+		PublicIncludePaths.AddRange(new string[] { });
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

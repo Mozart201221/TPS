@@ -4,12 +4,15 @@
 #include "AI/TPSAIController.h"
 #include "AI/TPSAICharacter.h"
 #include "Components/TPSAIPerceptionComponent.h"
+#include "Components/TPSRespawnComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
-
+ 
 ATPSAIController::ATPSAIController()
 {
 	TPSAIPerceptionComponent = CreateDefaultSubobject<UTPSAIPerceptionComponent>("TPSAIPerceptionComponent");
 	SetPerceptionComponent(*TPSAIPerceptionComponent);
+
+	RespawnComponent = CreateDefaultSubobject<UTPSRespawnComponent>("RespawnComponent");
 
 	bWantsPlayerState = true;
 }

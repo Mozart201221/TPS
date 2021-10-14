@@ -7,8 +7,15 @@
 #include "AIController.h"
 #include "UI/TPSGameHUD.h"
 #include "Player/TPSPlayerState.h"
+#include "TPSUtils.h"
+#include "Components/TPSRespawnComponent.h"
+#include "Components/TPSWeaponComponent.h"
+#include "EngineUtils.h"
+#include "TPSGameInstance.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogTPSGameMode, All, All);
+
+constexpr static int32 MinRoundTimeForRespawn = 10;
 
 ATPSGameMode::ATPSGameMode()
 {
@@ -27,6 +34,8 @@ void ATPSGameMode::StartPlay()
 
 	CurrentRound = 1;
 	StartRound();
+
+	SetMatchState(ETPSMatchState::InProgress);
 }
 
 UClass* ATPSGameMode::GetDefaultPawnClassForController_Implementation(AController* InController)
@@ -62,7 +71,7 @@ void ATPSGameMode::StartRound()
 
 void ATPSGameMode::GameTimerUpdate()
 {
-	UE_LOG(LogTPSGameMode, Display, TEXT("Time: %i / Round: %i/%i"), RoundCountDown, CurrentRound, GameData.RoundsNum);
+	//UE_LOG(LogTPSGameMode, Display, TEXT("Time: %i / Round: %i/%i"), RoundCountDown, CurrentRound, GameData.RoundsNum);
 
 	const auto TimerRate = GetWorldTimerManager().GetTimerRate(GameRoundTimeHadle);
 
@@ -78,8 +87,7 @@ void ATPSGameMode::GameTimerUpdate()
 		}	
 		else
 		{
-			UE_LOG(LogTPSGameMode, Display, TEXT("============= GAME OVER ==========="));
-			LogPlayerInfo();
+			GameOver();
 		}
 	}
 }
@@ -120,7 +128,9 @@ void ATPSGameMode::CreateTeamsInfo()
 
 		PlayerState->SetTeamID(TeamID);
 		PlayerState->SetTeamColor(DetermineColorByTeamID(TeamID));
+		PlayerState->SetPlayerName(Controller->IsPlayerController() ? "Player" : "Bot");
 		SetPlayerColor(Controller);
+
 		TeamID = TeamID == 1 ? 2 : 1;
 	}
 }
@@ -164,6 +174,8 @@ void ATPSGameMode::Killed(AController* KillerController, AController* VictimCont
 	{
 		VictimPlayerState->AddDeath();
 	}
+
+	StartRespawn(VictimController);
 }
 
 void ATPSGameMode::LogPlayerInfo()
@@ -179,5 +191,81 @@ void ATPSGameMode::LogPlayerInfo()
 		if (!PlayerState) continue;
 
 		PlayerState->LogInfo();
+	}
+}
+
+void ATPSGameMode::StartRespawn(AController* Controller)
+{
+	const auto RespawnAvailable = RoundCountDown > MinRoundTimeForRespawn + GameData.RespawnTime;
+	if (!RespawnAvailable) return;
+	const auto RespawnComponent = TPSUtils::GetTPSPlayerComponent<UTPSRespawnComponent>(Controller);
+	if (!RespawnComponent) return;
+
+	RespawnComponent->Respawn(GameData.RespawnTime);
+}
+
+void ATPSGameMode::RespawnRequest(AController* Controller)
+{
+	ResetOnePlayer(Controller);
+}
+
+void ATPSGameMode::GameOver()
+{
+	UE_LOG(LogTPSGameMode, Display, TEXT("============= GAME OVER ==========="));
+	LogPlayerInfo();
+
+	for (auto Pawn : TActorRange<APawn>(GetWorld()))
+	{
+		if (Pawn)
+		{
+			Pawn->TurnOff();
+			Pawn->DisableInput(NULL);
+		}
+	}
+
+	SetMatchState(ETPSMatchState::GameOver);
+}
+
+void ATPSGameMode::SetMatchState(ETPSMatchState State)
+{
+	if (MatchState == State) return;
+
+	MatchState = State;
+	OnMatchStateChanged.Broadcast(MatchState);
+}
+
+bool ATPSGameMode::SetPause(APlayerController* PC, FCanUnpause CanUnpauseDelegate)
+{
+	const auto PauseSet = Super::SetPause(PC, CanUnpauseDelegate);
+
+	if(PauseSet)
+	{
+		StopAllFire();
+		SetMatchState(ETPSMatchState::Pause);
+	}
+
+	return PauseSet;
+}
+
+bool ATPSGameMode::ClearPause()
+{
+	const auto PauseCleared = Super::ClearPause();
+	if (PauseCleared)
+	{
+		SetMatchState(ETPSMatchState::InProgress);
+	}
+
+	return PauseCleared;
+}
+
+void ATPSGameMode::StopAllFire()
+{
+	for (auto Pawn : TActorRange<APawn>(GetWorld()))
+	{
+		const auto WeaponComponent = TPSUtils::GetTPSPlayerComponent<UTPSWeaponComponent>(Pawn);
+		if (!WeaponComponent) continue;
+
+		WeaponComponent->StopFire();
+		WeaponComponent->Zoom(false);
 	}
 }
