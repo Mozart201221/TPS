@@ -97,9 +97,11 @@ void ATPSRifleWeapon::InitFX()
 	{
 		MuzzleFXComponent = SpawnMuzzleFX();
 	}
-	
-	FireAudioComponent = UGameplayStatics::SpawnSoundAttached(FireSound, WeaponMesh, MuzzleSocketName);
-	
+	if (!FireAudioComponent)
+	{
+		FireAudioComponent = UGameplayStatics::SpawnSoundAttached(FireSound, WeaponMesh, MuzzleSocketName);
+	}
+
 	SetFXActive(true);
 }
 
